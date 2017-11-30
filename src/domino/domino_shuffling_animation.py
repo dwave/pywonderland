@@ -9,10 +9,6 @@ This script requires ImageMagick be installed on your computer.
 Windows users also need to set the variable `CONVERTER` below
 to be the path to your `convert.exe`.
 
-Usage: python anim.py [-s] [-o] [-f]
-
-Optional arguments here are the same with those in aztec.py.
-
 :copyright (c) 2015 by Zhao Liang.
 """
 
@@ -20,24 +16,31 @@ import os
 import glob
 import subprocess
 import argparse
+import functools
 import aztec
+from random_tiling import render
 
 
 CONVERTER = 'convert'
 
+render = functools.partial(render, program='cairo')
+
 
 def make_animation(order, size, filename):
-    """Render one frame for each step in the algorithm."""
+    """
+    Render one frame for each step in the algorithm and then
+    use ImageMagick to convert the images into a gif.
+    """
     az = aztec.AztecDiamond(0)
     for i in range(order):
         az.delete()
-        az.render(size, order + 1, '_tmp{:03d}.png'.format(3 * i))
+        render(az, size, order + 1, '_tmp{:03d}.png'.format(3 * i))
 
         az = az.slide()
-        az.render(size, order + 1, '_tmp{:03d}.png'.format(3 * i + 1))
+        render(az, size, order + 1, '_tmp{:03d}.png'.format(3 * i + 1))
 
         az.create()
-        az.render(size, order + 1, '_tmp{:03d}.png'.format(3 * i + 2))
+        render(az, size, order + 1, '_tmp{:03d}.png'.format(3 * i + 2))
 
     command = [CONVERTER,
                '-layers', 'Optimize',
@@ -51,17 +54,13 @@ def make_animation(order, size, filename):
         os.remove(f)
 
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-order', metavar='o', type=int, default=30,
                         help='order of aztec diamond')
     parser.add_argument('-size', metavar='s', type=int, default=400,
                         help='image size')
-    parser.add_argument('-filename', metavar='f', default='dominoshuffling.gif',
+    parser.add_argument('-filename', metavar='f', default='domino_shuffling.gif',
                         help='output filename')
     args = parser.parse_args()
     make_animation(args.order, args.size, args.filename)
-
-
-if __name__ == '__main__':
-    main()

@@ -50,4 +50,4 @@ def main(imgsize):
 
 
 if __name__ == '__main__':
-    main(imgsize=800)
+    main(imgsize=600)

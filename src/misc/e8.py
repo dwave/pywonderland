@@ -8,7 +8,7 @@ The E8 picture
 This script draws the picture of E8 projected to its Coxeter plane.
 For a detailed discussion of the math see Humphreys's book
 
-    Reflection Groups and Coxeter Groups, section 17, chapter 3.
+    "Reflection Groups and Coxeter Groups", section 17, chapter 3.
 """
 
 from itertools import product, combinations
@@ -141,4 +141,4 @@ for i in range(len(roots)):
     ctx.arc(x, y, markersize, 0, 2*np.pi)
     ctx.fill()
 
-surface.write_to_png('e8-pattern.png')
+surface.write_to_png('e8_pattern.png')

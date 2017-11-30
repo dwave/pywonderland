@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This short script illustrates you how Wilson's algorithm works.
+This short script illustrates how Wilson's algorithm works.
 """
 
 import random
