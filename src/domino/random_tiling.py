@@ -10,7 +10,6 @@ with uniform probability.
 
 :copyright (c) 2015 by Zhao Liang.
 """
-
 import argparse
 import aztec
 
@@ -24,7 +23,7 @@ E_COLOR = (0, 0, 1)
 
 def render(az, imgsize, extent, filename, program):
     """
-    Draw current tiling (might have holes) to a png image with cairo.
+    Draw current tiling (might have holes) to a png image.
     imgsize: image size in pixels, e.g. size = 600 means 600x600.
     extent: range of the axis: [-extent, extent] x [-extent, extent]
     filename: output filename, must be a .png image.
