@@ -8,15 +8,18 @@ from struct import pack
 
 
 class DataBlock(object):
-    """Write bits into a bytearray and then pack this bytearray into data blocks.
-    This class is used in the LZW algorithm when encoding maze into frames."""
+    """
+    Write bits into a bytearray and then pack this bytearray into data blocks.
+    This class is used in the LZW algorithm when encoding maze into frames.
+    """
 
     def __init__(self):
         self._bitstream = bytearray()  # write bits into this array.
         self._nbits = 0  # a counter holds how many bits have been written.
 
     def encode_bits(self, num, size):
-        """Given a number `num`, encode it as a binary string of length `size`,
+        """
+        Given a number `num`, encode it as a binary string of length `size`,
         and pack it at the end of bitstream.
         Example: num = 3, size = 5. The binary string for 3 is '00011',
         here we padded extra zeros at the left to make its length to be 5.
@@ -34,9 +37,12 @@ class DataBlock(object):
             self._nbits += 1
 
     def dump_bytes(self):
-        """Pack the LZW encoded image data into blocks.
+        """
+        Pack the LZW encoded image data into blocks.
         Each block is of length <= 255 and is preceded by a byte
         in 0-255 that indicates the length of this block.
+        Each time after this function is called then `_nbits` and `_bitstream`
+        are reset to 0 and empty.
         """
         bytestream = bytearray()
         while len(self._bitstream) > 255:
@@ -49,8 +55,6 @@ class DataBlock(object):
         self._bitstream = bytearray()
         return bytestream
 
-
-stream = DataBlock()
 
 
 class GIFWriter(object):
@@ -65,9 +69,15 @@ class GIFWriter(object):
        (iii) the LZW enconded data.
     5. finally the trailor '0x3B'.
     """
+    _stream = DataBlock()
 
     def __init__(self, width, height, min_bits, palette, loop):
-        """Attributes are listed in the order they appear in the GIF file."""
+        """
+        width, height: size of the image in pixels.
+        min_bits: color depth (minimal number of bits needed to represent the colors).
+        palette: a 1-d list of colors used by the image.
+        loop: number of loops of the image.
+        """
         # constants for LZW encoding.
         self._palette_bits = min_bits
         self._clear_code = 1 << min_bits
@@ -98,12 +108,15 @@ class GIFWriter(object):
 
     @staticmethod
     def image_descriptor(left, top, width, height):
-        """This block specifies the position of a frame (relative to the window).
-        The ending packed byte field is 0 since we do not need a local color table."""
+        """
+        This block specifies the position of a frame (relative to the window).
+        The ending packed byte field is 0 since we do not need a local color table.
+        """
         return pack('<B4HB', 0x2C, left, top, width, height, 0)
 
     def pad_delay_frame(self, delay, trans_index):
-        """Pad a 1x1 pixel frame for delay. The image data could be written as
+        """
+        Pad a 1x1 pixel frame for delay. The image data could be written as
         `bytearray([self._palette_bits, 1, trans_index, 0])`, this works fine for decoders
         like firefox and chrome but fails for some decoders like eye of gnome
         when `self._palette_bits` is 7 or 8. Using the LZW encoding is a bit tedious but it's
@@ -112,10 +125,10 @@ class GIFWriter(object):
         control = self.graphics_control_block(delay, trans_index)
         descriptor = self.image_descriptor(0, 0, 1, 1)
         code_length = self._palette_bits + 1
-        stream.encode_bits(self._clear_code, code_length)
-        stream.encode_bits(trans_index, code_length)
-        stream.encode_bits(self._end_code, code_length)
-        data = bytearray([self._palette_bits]) + stream.dump_bytes() + bytearray([0])
+        self._stream.encode_bits(self._clear_code, code_length)
+        self._stream.encode_bits(trans_index, code_length)
+        self._stream.encode_bits(self._end_code, code_length)
+        data = bytearray([self._palette_bits]) + self._stream.dump_bytes() + bytearray([0])
         return control + descriptor + data
 
     def LZW_encode(self, input_data):
@@ -123,14 +136,14 @@ class GIFWriter(object):
         code_length = self._palette_bits + 1
         next_code = self._end_code + 1
         code_table = {(i,): i for i in range(1 << self._palette_bits)}
-        stream.encode_bits(self._clear_code, code_length)  # always start with the clear code.
+        self._stream.encode_bits(self._clear_code, code_length)  # always start with the clear code.
 
         pattern = tuple()
         for c in input_data:
             pattern += (c,)
             if pattern not in code_table:
                 code_table[pattern] = next_code  # add new code in the table.
-                stream.encode_bits(code_table[pattern[:-1]], code_length)  # output the prefix.
+                self._stream.encode_bits(code_table[pattern[:-1]], code_length)  # output the prefix.
                 pattern = (c,)  # suffix becomes the current pattern.
 
                 next_code += 1
@@ -138,61 +151,13 @@ class GIFWriter(object):
                     code_length += 1
                 if next_code == self._max_codes:
                     next_code = self._end_code + 1
-                    stream.encode_bits(self._clear_code, code_length)
+                    self._stream.encode_bits(self._clear_code, code_length)
                     code_length = self._palette_bits + 1
                     code_table = {(i,): i for i in range(1 << self._palette_bits)}
 
-        stream.encode_bits(code_table[pattern], code_length)
-        stream.encode_bits(self._end_code, code_length)
-        return bytearray([self._palette_bits]) + stream.dump_bytes() + bytearray([0])
-        
-    def save_gif(self, filename):
-        """Note the 'wb' mode here!"""
-        with open(filename, 'wb') as f:
-            f.write(self.logical_screen_descriptor +
-                    self.global_color_table +
-                    self.loop_control +
-                    self.data +
-                    self.trailor)
+        self._stream.encode_bits(code_table[pattern], code_length)
+        self._stream.encode_bits(self._end_code, code_length)
+        return bytearray([self._palette_bits]) + self._stream.dump_bytes() + bytearray([0])
 
-
-def example1():
-    width = 400
-    height = 200
-    min_bits = 3
-    palette = [255, 0, 0,
-               255, 125, 0,
-               255, 255, 0,
-               0, 255, 0,
-               0, 0, 255,
-               0, 255, 255,
-               255, 0, 255,
-               0, 0, 0]
-    loop = 0
-    writer = GIFWriter(width, height, min_bits, palette, loop)
-    descriptor = writer.image_descriptor(0, 0, width, height)
-    graphics_control = writer.graphics_control_block(delay=200, trans_index=7)
-
-    for i in range(7):
-        framei = [i] * width * height
-        writer.data += graphics_control + descriptor + writer.LZW_encode(framei)
-
-    writer.save_gif("example.gif")
-
-def example2():
-    # A 1x1 tiny gif example.
-    # For a static gif image the `graphics_control_block` is not needed.
-    width, height = 1, 1
-    min_bits = 1
-    palette = [255, 0, 0,
-               0, 0, 0]
-    loop = 0
-    writer = GIFWriter(width, height, min_bits, palette, loop)
-    descriptor = writer.image_descriptor(0, 0, width, height)
-    writer.data += descriptor + writer.LZW_encode([0])
-    writer.save_gif("tiny1x1.gif")
-
-
-if __name__ == "__main__":
-    example1()
-    example2()
+    def get_color_depth(self):
+        return self._palette_bits
