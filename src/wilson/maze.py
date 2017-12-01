@@ -10,6 +10,11 @@ class Canvas(object):
     """
 
     def __init__(self, maze, scale, min_bits, palette, loop, filename):
+        """
+        maze: an instance of the maze class.
+        scale: each cell in the maze occupies scale*scale pixels in the image.
+        filename: the output file.
+        """
         self.maze = maze
         self.scale = scale
         self.writer = GIFWriter(maze.width * scale, maze.height * scale, min_bits, palette, loop)
