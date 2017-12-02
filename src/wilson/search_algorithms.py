@@ -51,19 +51,24 @@ def bfs(maze, start, end):
 
 def dfs(maze, start, end):
     """Animating the depth-first search algorithm."""
+    def dist_to_color(d):
+        depth = maze.canvas.writer.get_color_depth()
+        return max(d % (1 << depth), 3)
+
+    dist = 0
     from_to = dict()  # a dict to remember each step.
-    stack = [(start, start)]
-    maze.mark_cell(start, Maze.FILL)
+    stack = [(start, start, dist)]
+    maze.mark_cell(start, dist_to_color(dist))
     visited = set([start])
     
     while len(stack) > 0:
-        parent, child = stack.pop()
+        parent, child, dist = stack.pop()
         from_to[child] = parent
-        maze.mark_cell(child, Maze.FILL)
-        maze.mark_wall(parent, child, Maze.FILL)
+        maze.mark_cell(child, dist_to_color(dist))
+        maze.mark_wall(parent, child, dist_to_color(dist))
         for next_cell in maze.get_neighbors(child):
             if (next_cell not in visited) and (not maze.connected(child, next_cell)):
-                stack.append((child, next_cell))
+                stack.append((child, next_cell, dist + 1))
                 visited.add(next_cell)
 
         maze.canvas.refresh_frame()

@@ -1,9 +1,37 @@
 # -*- coding: utf-8 -*-
+"""
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Make GIF animations of Wilson's uniform spanning tree algorithm
+and the breadth-first search algorithm.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usage:
+      python wilson.py [-width] [-height] [-scale]
+                       [-margin] [-bits]
+                       [-loop] [-filename]
+Optional arguments:
+    width, height: size of the maze (not the image), should both be odd integers.
+    scale: the size of the image will be (width * scale) * (height * scale).
+           In other words, each cell in the maze will occupy a square of
+           (scale * scale) pixels in the image.
+    margin: size of the border of the image.
+    bits: number of bits needed to represent all colors.
+          This value determines the number of colors used in the image.
+    loop: number of loops of the image, default to 0 (loop infinitely).
+    filename: the output file.
 
+Reference for Wilson's algorithm:
+
+    Probability on Trees and Networks, by Russell Lyons and Yuval Peres.
+
+Reference for the GIF89a specification:
+
+    http://giflib.sourceforge.net/whatsinagif/index.html
+
+Copyright (c) 2016 by Zhao Liang.
+"""
 import argparse
 import random
 from colorsys import hls_to_rgb
-from collections import deque
 from maze import Maze
 from search_algorithms import bfs
 
@@ -117,7 +145,7 @@ if __name__ == '__main__':
 
     # Comment out the following two lines if you don't want to show text.
     from gentext import generate_text_mask
-    mask = generate_text_mask(args.width, args.height, 'UST', 'ubuntu.ttf', 60)
+    mask = generate_text_mask(args.width, args.height, 'UST', '../resources/ubuntu.ttf', 60)
 
     maze = Wilson(args.width, args.height, args.margin, mask=mask)
     canvas = maze.add_canvas(scale=args.scale, min_bits=args.bits, palette=mypalette,

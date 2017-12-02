@@ -24,4 +24,4 @@ def generate_text_mask(width, height, text, font_file, fontsize):
 
 
 if __name__ == '__main__':
-    generate_text_mask(480, 320, 'PYTHON', 'ubuntu.ttf', 150)
+    generate_text_mask(480, 320, 'PYTHON', '../resources/ubuntu.ttf', 150)
