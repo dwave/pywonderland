@@ -201,7 +201,7 @@ class Maze(object):
         x, y = cell
         return self.grid[x][y] == Maze.WALL
 
-    def connected(self, cell_a, cell_b):
+    def barrier(self, cell_a, cell_b):
         """Check if two adjacent cells are connected."""
         x = (cell_a[0] + cell_b[0]) // 2
         y = (cell_a[1] + cell_b[1]) // 2

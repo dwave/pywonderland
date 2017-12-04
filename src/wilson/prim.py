@@ -35,19 +35,19 @@ canvas.pad_delay_frame(delay=100)
 canvas.set_control_params(delay=3, speed=5, trans_index=3,
                           wall_color=0, tree_color=1, path_color=2)
 
-tree = dict()
-queue = [(0, start, start)]
+queue = [(0, start, v) for v in maze.get_neighbors(start)]
 maze.mark_cell(start, Maze.TREE)
 
 # the main loop.
 while len(queue) > 0:
     _, parent, child = heapq.heappop(queue)
-    if child in tree:
+    if maze.in_tree(child):
         continue
-    tree[child] = parent
+
     maze.mark_cell(child, Maze.TREE)
     maze.mark_wall(parent, child, Maze.TREE)
     for v in maze.get_neighbors(child):
+        # assign a weight to this edge only when it's needed.
         w = round(random.random(), 3)
         heapq.heappush(queue, (w, child, v))
 
@@ -57,10 +57,10 @@ canvas.clear_remaining_changes()
 # pad three seconds delay to see the maze clearly.
 canvas.pad_delay_frame(300)
 
-canvas.set_control_params(delay=5, speed=10, trans_index=0,
+canvas.set_control_params(delay=5, speed=30, trans_index=0,
                           wall_color=0, tree_color=0, path_color=2, fill_color=3)
 
-# solve the maze.
+# solve the maze and pad five seconds delay to see the path clearly.
 dfs(maze, start, end)
 canvas.pad_delay_frame(500)
 

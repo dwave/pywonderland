@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 A simple demo shows how to generat a maze with random depth-first search.
+This algorithm tends to give vey serpentine results.
 """
 import random
 from maze import Maze
+from search_algorithms import bfs
 
 
 # firstly set the params of the image.
@@ -46,7 +48,15 @@ while len(stack) > 0:
     canvas.refresh_frame()
 canvas.clear_remaining_changes()
 
-# pad five seconds delay to see the maze clearly.
+# pad three seconds delay to see the maze clearly.
+canvas.pad_delay_frame(300)
+canvas.set_control_params(delay=5, speed=30, trans_index=0,
+                          wall_color=0, tree_color=0, path_color=2, fill_color=3)
+
+# solve the maze.
+bfs(maze, start, end)
+
+# and pad five seconds delay to see the path clearly.
 canvas.pad_delay_frame(500)
 
 # close the file and save the image.
