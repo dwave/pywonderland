@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+This script contains two class:
 
+1. The 'Maze' class for running various algorithms.
+2. The 'Canvas' class for encoding a maze into a GIF image.
+"""
 from encoder import GIFWriter
-
 
 class Canvas(object):
     """
@@ -132,12 +136,14 @@ class Maze(object):
               This mask image must preserve the connectivity of the graph,
               otherwise the program will not terminate.
         """
+        if (width * height % 2 == 0):
+            raise ValueError('The width and height of the maze must both be odd integers!')
+
         self.width = width
         self.height = height
         self.grid = [[0]*height for _ in range(width)]
         self.num_changes = 0   # a counter holds how many cells are changed.
         self.frame_box = None  # maintains the region that to be updated.
-        self.path = []         # hold the path in the loop erased random walk.
         
         def get_mask_pixel(cell):
             if mask is None:
