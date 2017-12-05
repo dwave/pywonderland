@@ -6,9 +6,9 @@ and maze solving algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Usage:
-      python wilson.py [-width] [-height] [-scale]
-                       [-margin] [-bits]
-                       [-loop] [-filename]
+      python main.py [-width] [-height] [-scale]
+                     [-margin] [-bits]
+                     [-loop] [-filename]
 Optional arguments:
     width, height: size of the maze (not the image), should both be odd integers.
     scale: the size of the image will be (width * scale) * (height * scale).
@@ -19,14 +19,6 @@ Optional arguments:
           This value determines the number of colors used in the image.
     loop: number of loops of the image, default to 0 (loop infinitely).
     filename: the output file.
-
-Reference for Wilson's algorithm:
-
-    "Probability on Trees and Networks", by Russell Lyons and Yuval Peres.
-
-Reference for the GIF89a specification:
-
-    http://giflib.sourceforge.net/whatsinagif/index.html
 
 Copyright (c) 2016 by Zhao Liang.
 """
@@ -63,7 +55,8 @@ def main():
         rgb = hls_to_rgb((i / 360.0) % 1, 0.5, 1.0)
         mypalette += map(lambda x: int(round(255 * x)), rgb)
 
-    # you may use a binary image instance of PIL's Image class here as the mask image.
+    # you may use a binary image instance of PIL's Image class here as the mask image,
+    # this image must preserve the connectivity of the grid graph.
     from gentext import generate_text_mask
     mask = generate_text_mask(args.width, args.height, 'UST', '../resources/ubuntu.ttf', 60)
     maze = Maze(args.width, args.height, args.margin, mask=mask)

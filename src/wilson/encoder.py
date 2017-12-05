@@ -3,6 +3,10 @@
 ~~~~~~~~~~~~~~~~~~~~
 A simple GIF encoder
 ~~~~~~~~~~~~~~~~~~~~
+
+Reference for the GIF89a specification:
+
+    http://giflib.sourceforge.net/whatsinagif/index.html
 """
 from struct import pack
 
@@ -62,13 +66,14 @@ class GIFWriter(object):
     Structure of a GIF file: (in the order they appear)
     1. always begins with the logical screen descriptor.
     2. then follows the global color table.
-    3. then follows the loop control block (specify the number of loops)
+    3. then follows the loop control block (specify the number of loops).
     4. then follows the image data of the frames, each frame is further divided into:
        (i) a graphics control block that specify the delay and transparent color of this frame.
        (ii) the image descriptor.
-       (iii) the LZW enconded data.
+       (iii) the LZW encoded data.
     5. finally the trailor '0x3B'.
     """
+    # use a singleton instance of DataBlock to avoid creating and deleting objects many times.
     _stream = DataBlock()
 
     def __init__(self, width, height, min_bits, palette, loop):
@@ -76,30 +81,38 @@ class GIFWriter(object):
         width, height: size of the image in pixels.
         min_bits: color depth (minimal number of bits needed to represent the colors).
         palette: a 1-d list of colors used by the image.
-        loop: number of loops of the image.
+        loop: number of loops of the image. 0 means loop infinitely (and this is the default).
         """
+        self.num_colors = 1 << min_bits  # number of colors in the image.
         # constants for LZW encoding.
         self._palette_bits = min_bits
-        self._clear_code = 1 << min_bits
-        self._end_code = (1 << min_bits) + 1
+        self._clear_code = self.num_colors
+        self._end_code = self.num_colors + 1
         self._max_codes = 4096
 
+        # ---------- the logical screen descriptor ----------
         packed_byte = 1  # the packed byte in the logical screen descriptor.
         packed_byte = packed_byte << 3 | (self._palette_bits - 1)  # color resolution.
         packed_byte = packed_byte << 1 | 0                         # sorted flag.
         packed_byte = packed_byte << 3 | (self._palette_bits - 1)  # size of the global color table.
         self.logical_screen_descriptor = pack('<6s2H3B', b'GIF89a', width, height, packed_byte, 0, 0)
+        # ---------------------------------------------------
 
-        valid_len = 3 * (1 << min_bits)
+        # ---------- the global color table ----------
+        valid_len = 3 * self.num_colors
         if len(palette) > valid_len:
             palette = palette[:valid_len]
         if len(palette) < valid_len:
             palette += [0] * (valid_len - len(palette))
         self.global_color_table = bytearray(palette)
+        # --------------------------------------------
 
+        # ---------- the loop control block ----------
         self.loop_control = pack('<3B8s3s2BHB', 0x21, 0xFF, 11, b'NETSCAPE', b'2.0', 3, 1, loop, 0)
-        self.data = bytearray()
-        self.trailor = bytearray([0x3B])
+        # --------------------------------------------
+        
+        self.data = bytearray()  # data of the frames.
+        self.trailor = bytearray([0x3B])  # the trailing byte indicates the end of the file.
 
     @staticmethod
     def graphics_control_block(delay, trans_index):
@@ -135,7 +148,7 @@ class GIFWriter(object):
         """Implement the LZW-encoding algorithm for GIF specification."""
         code_length = self._palette_bits + 1
         next_code = self._end_code + 1
-        code_table = {(i,): i for i in range(1 << self._palette_bits)}
+        code_table = {(i,): i for i in range(self.num_colors)}
         self._stream.encode_bits(self._clear_code, code_length)  # always start with the clear code.
 
         pattern = tuple()
@@ -153,11 +166,8 @@ class GIFWriter(object):
                     next_code = self._end_code + 1
                     self._stream.encode_bits(self._clear_code, code_length)
                     code_length = self._palette_bits + 1
-                    code_table = {(i,): i for i in range(1 << self._palette_bits)}
+                    code_table = {(i,): i for i in range(self.num_colors)}
 
         self._stream.encode_bits(code_table[pattern], code_length)
         self._stream.encode_bits(self._end_code, code_length)
         return bytearray([self._palette_bits]) + self._stream.dump_bytes() + bytearray([0])
-
-    def get_color_depth(self):
-        return self._palette_bits

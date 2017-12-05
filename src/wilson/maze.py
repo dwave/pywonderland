@@ -1,27 +1,33 @@
 # -*- coding: utf-8 -*-
 """
-This script contains two class:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This script contains two classes:
 
 1. The 'Maze' class for running various algorithms.
 2. The 'Canvas' class for encoding a maze into a GIF image.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 from encoder import GIFWriter
 
 class Canvas(object):
     """
-    A canvas is built on top of a maze to encode it into frames.
-    The core part is the `encode_frame` method below.
+    A canvas is built on top of a maze for encoding it into frames.
+    The core part is the `encode_frame` method below. Other methods
+    are either wrappers of this function or simply for setting the
+    parameters of the animation.
     """
 
     def __init__(self, maze, scale, min_bits, palette, loop, filename):
         """
-        maze: an instance of the maze class.
+        maze: an instance of the maze class below.
         scale: each cell in the maze occupies scale*scale pixels in the image.
         filename: the output file.
+        min_bits, palette, loop: the same as they are in the GIFWriter class.
         """
         self.maze = maze
         self.scale = scale
         self.writer = GIFWriter(maze.width * scale, maze.height * scale, min_bits, palette, loop)
+        # use a dict to map the cells to the color indices.
         self.colormap = {i: i for i in range(1 << min_bits)}
         self.speed = 10        # output the frame once this number of cells are changed.
         self.trans_index = 3   # the index of the transparent color in the global color table.
@@ -30,11 +36,12 @@ class Canvas(object):
         self.target_file.write(self.writer.logical_screen_descriptor
                                + self.writer.global_color_table
                                + self.writer.loop_control)
-
+        
     def encode_frame(self, static=False):
         """
         Encode current maze into one frame.
-        If static is True then the graphics control block is not added.
+        If static is `True` then the graphics control block is not added
+        (so this frame can be used as a static background image).
         """
         # get the bounding box of this frame.
         if self.maze.frame_box is not None:
@@ -48,7 +55,9 @@ class Canvas(object):
         descriptor = GIFWriter.image_descriptor(left * self.scale, top * self.scale,
                                                 width * self.scale, height * self.scale)
 
-        # a generator that yields the pixels of this frame.
+        # A generator that yields the pixels of this frame. This may look a bit unintuitive
+        # because encoding frames will be called thousands of times in an animation
+        # and I don't want to create and destroy a new list each time it's called. 
         def get_frame_pixels():
             for i in range(width * height * self.scale * self.scale):
                 y = i // (width * self.scale * self.scale)
@@ -80,10 +89,12 @@ class Canvas(object):
         self.target_file.write(self.encode_frame(static=True))
 
     def refresh_frame(self):
+        """Update a frame in the animation and write it into the file."""
         if self.maze.num_changes >= self.speed:
             self.target_file.write(self.encode_frame(static=False))
 
     def clear_remaining_changes(self):
+        """May be there are some remaining changes when the animation is finished."""
         if self.maze.num_changes > 0:
             self.target_file.write(self.encode_frame(static=False))
 
@@ -119,7 +130,7 @@ class Maze(object):
 
     def __init__(self, width, height, margin, mask=None):
         """
-        width, height: size of the maze, must both be odd numbers.
+        width, height: size of the maze, must both be odd integers.
         margin: size of the border of the maze.
 
         The maze is represented by a grid with `height` rows and `width` columns,
@@ -143,9 +154,13 @@ class Maze(object):
         self.height = height
         self.grid = [[0]*height for _ in range(width)]
         self.num_changes = 0   # a counter holds how many cells are changed.
-        self.frame_box = None  # maintains the region that to be updated.
+        self.frame_box = None  # a 4-tuple maintains the region that to be updated.
         
         def get_mask_pixel(cell):
+            """
+            For a binary mask image, the white pixels are considered to be cells
+            and the black pixels are considered to be walls.
+            """
             if mask is None:
                 return True
             else:
@@ -224,5 +239,6 @@ class Maze(object):
         return self.grid[x][y] == Maze.PATH
 
     def add_canvas(self, *args, **kwargs):
+        """Mimicking matplotlib's `fig.add_axes` syntax."""
         self.canvas = Canvas(self, *args, **kwargs)
         return self.canvas

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Implementaion of several maze generation algorithms (Kruskal, Prim, Wilson, etc.)
-and several maze solving algorithms (bfs, dfs, A-star).
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Implementaion of several maze generation algorithms
+and maze solving algorithms.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 import heapq
 import random
@@ -13,7 +15,6 @@ from maze import Maze
 # ---------------------------
 # maze generation algorithms.
 # ---------------------------
-
 def prim(maze, start):
     """Maze by Prim's algorithm."""
     priorityQueue = [(0, start, v) for v in maze.get_neighbors(start)]
@@ -26,8 +27,8 @@ def prim(maze, start):
         maze.mark_cell(child, Maze.TREE)
         maze.mark_wall(parent, child, Maze.TREE)
         for v in maze.get_neighbors(child):
-            # assign a weight to this edge only when it's needed.
-            weight = round(random.random(), 3)
+            # assign a weight between 0-10.0 to this edge only when it's needed.
+            weight = 10 * random.random()
             heapq.heappush(priorityQueue, (weight, child, v))
 
         maze.canvas.refresh_frame()
@@ -58,17 +59,16 @@ def kruskal(maze):
     """Maze by Kruskal's algorithm."""
     parent = {v: v for v in maze.cells}
     rank = {v: 0 for v in maze.cells}
-    # this would assign weights to an edge twice, but only the first weight is used.
-    weightedEdges = [(round(random.random(), 3), u, v) for u in maze.cells for v in maze.get_neighbors(u)]
+    edges = [(random.random(), u, v) for u in maze.cells \
+             for v in maze.get_neighbors(u) if u < v]
 
-    def find(u):
-        """find the root of the subtree that u belongs to."""
-        v = u
+    def find(v):
+        """find the root of the subtree that v belongs to."""
         while parent[v] != v:
             v = parent[v]
         return v
 
-    for _, u, v in sorted(weightedEdges, key=itemgetter(0)):
+    for _, u, v in sorted(edges, key=itemgetter(0)):
         root1 = find(u)
         root2 = find(v)
         if root1 != root2:
@@ -88,7 +88,11 @@ def kruskal(maze):
 
 
 def wilson(maze, root):
-    """Maze by Wilson's algorithm."""
+    """
+    Maze by Wilson's algorithm.
+    Reference:
+        "Probability on Trees and Networks", by Russell Lyons and Yuval Peres.
+    """
     maze.walkPath = []  # hold the path of the loop erased random walk.
 
     def add_to_path(cell):
@@ -107,6 +111,7 @@ def wilson(maze, root):
         maze.mark_cell(maze.walkPath[index], Maze.PATH)
         maze.walkPath = maze.walkPath[:index+1]
 
+    # the algorithm begins here.
     # initially the tree only contains the root.
     maze.mark_cell(root, Maze.TREE)
 
@@ -120,16 +125,19 @@ def wilson(maze, root):
 
             while not maze.in_tree(currentCell):
                 nextCell = random.choice(maze.get_neighbors(currentCell))
-                if maze.in_path(nextCell):
+                if maze.in_path(nextCell):  # if it's already in the path then a loop is found.
                     erase_loop(nextCell)
-                elif maze.in_tree(nextCell):
+                elif maze.in_tree(nextCell):  # if the walk hits the tree then finish the walk.
                     add_to_path(nextCell)
                     # `add_to_path` will change the cell to `PATH` so we need to reset it.
                     maze.mark_cell(nextCell, Maze.TREE)
-                else:
+                else:  # continue the walk from this new cell.
                     add_to_path(nextCell)
                 currentCell = nextCell
+
                 maze.canvas.refresh_frame()
+
+            # once the walk hits the tree then add its path to the tree.
             maze.mark_path(maze.walkPath, Maze.TREE)
             
     maze.canvas.clear_remaining_changes()
@@ -138,7 +146,6 @@ def wilson(maze, root):
 # ------------------------
 # maze solving algorithms.
 # ------------------------
-
 # a helper function
 def retrieve_path(cameFrom, start, end):
     """Get the path between the start and the end."""
@@ -151,34 +158,34 @@ def retrieve_path(cameFrom, start, end):
 
 
 def bfs(maze, start, end):
-    """Breadth-first search."""
+    """Solve the maze by breadth-first search."""
     
     # a helper function
     def dist_to_color(distance):
         """
         Map the distance of a cell to the start to a color index. 
         This is because we must make sure that the assigned number of each cell
-        must lies between [0, 2**min_bits] otherwise the initial dict of the 
-        encoder cannot recognize it.
+        lies between 0 and the total number of colors in the image,
+        otherwise the initial dict of the encoder cannot recognize it.
         """
-        depth = maze.canvas.writer.get_color_depth()
-        return max(distance % (1 << depth), 3)
+        return max(distance % maze.canvas.writer.num_colors, 3)
 
     dist = 0
-    cameFrom = dict()
-    queue = deque([(start, start, dist)])
+    cameFrom = {start: start}
+    queue = deque([(start, dist)])
     maze.mark_cell(start, dist_to_color(dist))
     visited = set([start])
 
     while len(queue) > 0:
-        parent, child, dist = queue.popleft()
-        cameFrom[child] = parent
+        child, dist = queue.popleft()
+        parent = cameFrom[child]
         maze.mark_cell(child, dist_to_color(dist))
         maze.mark_wall(parent, child, dist_to_color(dist))
 
         for nextCell in maze.get_neighbors(child):
             if (nextCell not in visited) and (not maze.barrier(child, nextCell)):
-                queue.append((child, nextCell, dist + 1))
+                cameFrom[nextCell] = child
+                queue.append((nextCell, dist + 1))
                 visited.add(nextCell)
 
         maze.canvas.refresh_frame()
@@ -192,32 +199,26 @@ def bfs(maze, start, end):
 
 
 def dfs(maze, start, end):
-    """Depth-first search."""
+    """Solve the maze by depth-first search."""
 
     def dist_to_color(distance):
-        """
-        Map the distance of a cell to the start to a color index. 
-        This is because we must make sure that the assigned number of each cell
-        must lies between [0, 2**min_bits] otherwise the initial dict of the 
-        encoder cannot recognize it.
-        """
-        depth = maze.canvas.writer.get_color_depth()
-        return max(distance % (1 << depth), 3)
+        return max(distance % maze.canvas.writer.num_colors, 3)
 
     dist = 0
-    cameFrom = dict()  # a dict to remember each step.
-    stack = [(start, start, dist)]
+    cameFrom = {start: start}  # a dict to remember each step.
+    stack = [(start, dist)]
     maze.mark_cell(start, dist_to_color(dist))
     visited = set([start])
     
     while len(stack) > 0:
-        parent, child, dist = stack.pop()
-        cameFrom[child] = parent
+        child, dist = stack.pop()
+        parent = cameFrom[child] 
         maze.mark_cell(child, dist_to_color(dist))
         maze.mark_wall(parent, child, dist_to_color(dist))
         for nextCell in maze.get_neighbors(child):
             if (nextCell not in visited) and (not maze.barrier(child, nextCell)):
-                stack.append((child, nextCell, dist + 1))
+                cameFrom[nextCell] = child
+                stack.append((nextCell, dist + 1))
                 visited.add(nextCell)
 
         maze.canvas.refresh_frame()
@@ -229,17 +230,19 @@ def dfs(maze, start, end):
 
 
 def astar(maze, start, end):
-    """A* search."""
+    """Solve the maze by A* search."""
+    weightedEdges = {(u, v): 1 for u in maze.cells for v in maze.get_neighbors(u)}
+    priorityQueue = [(0, start)]
+    cameFrom = {start: start}
+    costSoFar = {start: 0}
+
     def manhattan(u, v):
         """The heuristic distance between two cells."""
         return abs(u[0] - v[0]) + abs(u[1] - v[1])
 
-    weightedEdges = {(u, v): 1.0 for u in maze.cells for v in maze.get_neighbors(u)}
-    priorityQueue = [(0, start, start)]
-    cameFrom = dict()
-    costSoFar = {start: 0}
     while len(priorityQueue) > 0:
-        _, parent, child = heapq.heappop(priorityQueue)
+        _, child = heapq.heappop(priorityQueue)
+        parent = cameFrom[child]
         maze.mark_cell(child, Maze.FILL)
         maze.mark_wall(parent, child, Maze.FILL)
         if child == end:
@@ -247,11 +250,12 @@ def astar(maze, start, end):
 
         for nextCell in maze.get_neighbors(child):
             newCost = costSoFar[parent] + weightedEdges[(child, nextCell)]
-            if (nextCell not in costSoFar or newCost < costSoFar[nextCell]) and (not maze.barrier(nextCell, child)):
+            if (nextCell not in costSoFar or newCost < costSoFar[nextCell]) \
+               and (not maze.barrier(nextCell, child)):
                 costSoFar[nextCell] = newCost
-                priority = newCost + manhattan(nextCell, end)
-                heapq.heappush(priorityQueue, (priority, child, nextCell))
                 cameFrom[nextCell] = child
+                priority = newCost + manhattan(nextCell, end)
+                heapq.heappush(priorityQueue, (priority, nextCell))
 
         maze.canvas.refresh_frame()
     maze.canvas.clear_remaining_changes()
