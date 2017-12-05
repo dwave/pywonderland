@@ -234,7 +234,6 @@ def astar(maze, start, end):
         """The heuristic distance between two cells."""
         return abs(u[0] - v[0]) + abs(u[1] - v[1])
 
-    # weights are indeed not necessary in our program since we only search through trees.
     weightedEdges = {(u, v): 1.0 for u in maze.cells for v in maze.get_neighbors(u)}
     priorityQueue = [(0, start, start)]
     cameFrom = dict()
