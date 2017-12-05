@@ -55,7 +55,7 @@ def main():
                         help='output file name')
     args = parser.parse_args()
 
-    # Define your favorite global color table here.
+    # define your favorite global color table here.
     mypalette = [0, 0, 0, 200, 200, 200, 255, 0, 255]    
     # GIF files allows at most 256 colors in the global color table,
     # redundant colors will be discarded when the encoder is initialized.
@@ -70,9 +70,9 @@ def main():
     canvas = maze.add_canvas(scale=args.scale, min_bits=args.bits, palette=mypalette,
                              loop=args.loop, filename=args.filename)
 
-    # Here we need to paint the blank background because the region that has not been
+    # here we need to paint the blank background because the region that has not been
     # covered by any frame will be set to transparent by decoders.
-    # Comment this line and watch the result if you don't understand this.
+    # Comment out this line and watch the result if you don't understand this.
     canvas.paint_background(wall_color=0)
 
     # pad one second delay, get ready!
@@ -85,26 +85,26 @@ def main():
     start = (args.margin, args.margin)
     end = (args.width - args.margin - 1, args.height - args.margin - 1)
 
-    # The maze generation animation.
-    # Try prim(maze, start) or kruskal(maze) or random_dfs(maze) here!
+    # the maze generation animation.
+    # try prim(maze, start) or kruskal(maze) or random_dfs(maze) here!
     wilson(maze, start)
 
-    # Pad three seconds delay to help to see the resulting maze clearly.
+    # pad three seconds delay to help to see the resulting maze clearly.
     canvas.pad_delay_frame(delay=300)
 
-    # In the path finding animation the walls are unchanged throughout,
+    # in the path finding animation the walls are unchanged throughout,
     # hence it's safe to use color 0 as the transparent color.
     canvas.set_control_params(delay=5, speed=30, trans_index=0, wall_color=0,
                               tree_color=0, path_color=2, fill_color=3)
 
-    # The maze solving animation.
-    # Try dfs(maze, start, end) or astar(maze, start, end) here!
+    # the maze solving animation.
+    # try dfs(maze, start, end) or astar(maze, start, end) here!
     bfs(maze, start, end)
 
-    # Pad five seconds delay to help to see the resulting path clearly.
+    # pad five seconds delay to help to see the resulting path clearly.
     canvas.pad_delay_frame(delay=500)
 
-    # Finally finish the animation and close the file.
+    # finally finish the animation and close the file.
     canvas.save()
 
 
