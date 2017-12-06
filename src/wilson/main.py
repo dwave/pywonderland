@@ -72,7 +72,7 @@ def main():
     canvas.pad_delay_frame(delay=100)
 
     # you may adjust the `speed` parameter for different algorithms.
-    canvas.set_control_params(delay=2, speed=30, trans_index=3,
+    canvas.set_control_params(delay=2, speed=50, trans_index=3,
                               wall_color=0, tree_color=1, path_color=2)
 
     start = (args.margin, args.margin)

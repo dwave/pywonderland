@@ -15,6 +15,7 @@ from maze import Maze
 # ---------------------------
 # maze generation algorithms.
 # ---------------------------
+
 def prim(maze, start):
     """Maze by Prim's algorithm."""
     priorityQueue = [(0, start, v) for v in maze.get_neighbors(start)]
@@ -112,7 +113,7 @@ def wilson(maze, root):
         maze.walkPath = maze.walkPath[:index+1]
 
     # the algorithm begins here.
-    # initially the tree only contains the root.
+    # initially the tree contains only the root.
     maze.mark_cell(root, Maze.TREE)
 
     # for each cell that is not in the tree,
@@ -146,6 +147,7 @@ def wilson(maze, root):
 # ------------------------
 # maze solving algorithms.
 # ------------------------
+
 # a helper function
 def retrieve_path(cameFrom, start, end):
     """Get the path between the start and the end."""
@@ -231,7 +233,7 @@ def dfs(maze, start, end):
 
 def astar(maze, start, end):
     """Solve the maze by A* search."""
-    weightedEdges = {(u, v): 1 for u in maze.cells for v in maze.get_neighbors(u)}
+    weightedEdges = {(u, v): 1.0 for u in maze.cells for v in maze.get_neighbors(u)}
     priorityQueue = [(0, start)]
     cameFrom = {start: start}
     costSoFar = {start: 0}

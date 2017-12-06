@@ -83,7 +83,7 @@ class GIFWriter(object):
         palette: a 1-d list of colors used by the image.
         loop: number of loops of the image. 0 means loop infinitely (and this is the default).
         """
-        self.num_colors = 1 << min_bits  # number of colors in the image.
+        self.num_colors = 1 << min_bits  # number of colors in the global color table.
         # constants for LZW encoding.
         self._palette_bits = min_bits
         self._clear_code = self.num_colors
